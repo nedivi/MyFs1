@@ -134,10 +134,7 @@ void CMyFs::DeleteDirRecursive(std::shared_ptr<CFileSystemDir>& FileSystemDataPt
 bool CMyFs::DeleteDir(std::shared_ptr<CFileSystemDir>& FileSystemDataPtr, std::string& FsToBeDeleted)
 {
   bool FoundMatchDir = (FileSystemDataPtr->m_MapDirName.find(FsToBeDeleted) != FileSystemDataPtr->m_MapDirName.end());
-  if (FoundMatchDir)
-  {
-    DeleteDirRecursive(FileSystemDataPtr->m_MapDirName[FsToBeDeleted]);
-  }
+  DeleteDirRecursive(FileSystemDataPtr);
 
   return FoundMatchDir;
 }
@@ -149,7 +146,7 @@ bool CMyFs::DeleteFile(std::shared_ptr<CFileSystemDir>& FileSystemDataPtr, std::
   {
     FileSystemDataPtr->m_MapFileName.erase(FsToBeDeleted);
   }
-  if (FileSystemDataPtr->m_MapFileName.size() <= 0)  //  No more ekements, clear map
+  if (FileSystemDataPtr->m_MapFileName.size() <= 0)
   {
     FileSystemDataPtr->m_MapFileName.clear();
   }
@@ -168,7 +165,7 @@ bool CMyFs::DeleteElementInFs(std::vector<std::string>& VecFSNames)
     if (FileSystemDataPtr)
     {
       bool Deleted = DeleteDir(FileSystemDataPtr, FsToBeDeleted);
-      if (Deleted == false)
+      if (Deleted = false)
       {
         bool Deleted = DeleteFile(FileSystemDataPtr, FsToBeDeleted);
       }
@@ -287,11 +284,8 @@ bool CMyFs::DeleteElement(std::string FileNameFullPath)
   SplitFullPathToVector(FileNameFullPath, VecFSNames);
   bool Ok = true;
 
-  bool elementDeleted = DeleteElementInFs(VecFSNames);
-
-  /*
   std::string FsToBeDeleted = VecFSNames.back();  // The dir name to be added
-  VecFSNames.pop_back();   // Take out the dir name to be added
+  VecFSNames.pop_back();   // Take out the dir name to be added 
 
   std::shared_ptr<CFileSystemDir> FileSystemDataPtr = GetDirInFs(VecFSNames);
   if (FileSystemDataPtr)  // Legal path to add directory;
@@ -300,8 +294,6 @@ bool CMyFs::DeleteElement(std::string FileNameFullPath)
     bool FoundMatchFs = (FileSystemDataPtr->m_MapDirName.find(FsToBeDeleted) != FileSystemDataPtr->m_MapDirName.end());
   }
   return Ok;
-  */
-  return elementDeleted;
 }
 
 int main()
@@ -316,26 +308,14 @@ int main()
   MyFs.AddDir("A/B/D.dat");
   MyFs.AddFile("A/B/D.dat");
   MyFs.AddDir("A/C/D");
-  MyFs.AddDir("A/C/E");
-  MyFs.AddDir("A/C/F");
-  MyFs.AddDir("A/C/G");
-  MyFs.AddFile("A/C/D/Y.dat");
-  MyFs.AddFile("A/C/D/Z.dat");
-  MyFs.AddFile("A/C/D/S.dat");
   MyFs.AddDir("A/C");
   MyFs.AddFile("A/C/D/Y.dat");
   MyFs.AddDir("A/C/D");
   MyFs.AddFile("A/C/D/Y.dat");
-  MyFs.AddFile("A/C/D/Z.dat");
-  MyFs.AddFile("A/C/D/S.dat");
 
-  MyFs.DeleteElement("A/C/D/Y.dat");
-  MyFs.DeleteElement("A/C/D/Z.dat");
-  MyFs.DeleteElement("A/C/D/S.dat");
   MyFs.DeleteElement("A/C");
-  MyFs.DeleteElement("A/C/D/Y.dat");
-  MyFs.DeleteElement("A.dat");
-  MyFs.DeleteElement("A.dat");
+  MyFs.AddDir("A.dat");
+  MyFs.AddDir("A.dat");
 
 
 
