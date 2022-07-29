@@ -50,7 +50,9 @@ bool CMyFs::ValidFSName(std::vector<std::string>& VecFSNames, EFSType FSType)
 {
   bool Ok = false;
   int cnt = 0;
+  //  size_t lastElementCnt = (FSType == EFSType::LINK) ? VecFSNames.size() : VecFSNames.size() - 1;
   size_t lastElementCnt = VecFSNames.size() - 1;
+
   for (auto &it : VecFSNames)
   {
     if (cnt < lastElementCnt)
@@ -59,17 +61,14 @@ bool CMyFs::ValidFSName(std::vector<std::string>& VecFSNames, EFSType FSType)
     }
     else
     {
-      // Link and file have the same validity
       switch (FSType)
       {
       case EFSType::DIR:
+      case EFSType::LINK:
         Ok = ValidDirName(it);
         break;
       case EFSType::FILE:
         Ok = ValidFileName(it);
-        break;
-      case EFSType::LINK:
-        Ok = ValidLinkName(it);
         break;
       default:
         Ok = false;
@@ -80,8 +79,8 @@ bool CMyFs::ValidFSName(std::vector<std::string>& VecFSNames, EFSType FSType)
       {
         break;
       }
-      ++cnt;
     }
+    ++cnt;
   }
   return Ok;
 }
@@ -117,7 +116,7 @@ std::shared_ptr<CFileSystemDir> CMyFs::GetDirInFs(std::vector<std::string>& VecF
   bool FoundMatchDir = true;
   for (auto &MyDirIter : VecFSNames)
   {
-    TMapFSIter CfsIter = FileSystemDataPtr->m_MapDirName.find(MyDirIter);
+    TMapDirIter CfsIter = FileSystemDataPtr->m_MapDirName.find(MyDirIter);
     FoundMatchDir = (CfsIter != FileSystemDataPtr->m_MapDirName.end());
 
     if (FoundMatchDir)
@@ -140,17 +139,6 @@ bool CMyFs::SearchInDirs(std::vector<std::string>& VecFSNames, std::string& FsTo
   FsToBeAdded = VecFSNames.back();  // The dir name to be added
   VecFSNames.pop_back();   // Take out the dir name to be added 
   FileSystemDataPtr = GetDirInFs(VecFSNames);
-  /*
-  if (FileSystemDataPtr)  // Legal path to add directory;
-  {
-    // Now look if there is a file or directory that match this new FS name
-    FoundMatchFs = (FileSystemDataPtr->m_MapDirName.find(FsToBeAdded) != FileSystemDataPtr->m_MapDirName.end());
-    if (FoundMatchFs == false)
-    {
-      FoundMatchFs = (FileSystemDataPtr->m_MapFileName.find(FsToBeAdded) != FileSystemDataPtr->m_MapFileName.end());
-    }
-  }
-  */
   return FoundMatchFs;
 }
 
@@ -160,7 +148,19 @@ void CMyFs::DisplayFS(std::string FSName, int FSLevel, EFSType FSType)
   {
     std::cout << "\t";
   }
-  std::cout << FSName << "\t\t\t" << m_MapFSType2FString[FSType] << std::endl;
+  std::cout << FSName << "\t" << m_MapFSType2FString[FSType] << std::endl;
+}
+
+void CMyFs::DisplayLink(std::string LinkName, std::string FStoBeLinked, std::shared_ptr<CFileSystemDir>& FileSystemDataPtr, int FSLevel)
+{
+  bool FoundMatchFs = (FileSystemDataPtr->m_MapDirName.find(FStoBeLinked) != FileSystemDataPtr->m_MapDirName.end());
+  if (FoundMatchFs == false)
+  {
+    FoundMatchFs = (FileSystemDataPtr->m_SetFileName.find(FStoBeLinked) != FileSystemDataPtr->m_SetFileName.end());
+  }
+  std::string StrExistLink = FoundMatchFs ? "" : "!";
+  std::string LinkNameToDisplay = StrExistLink + "@" + LinkName;
+  DisplayFS(LinkNameToDisplay, FSLevel, EFSType::LINK);
 
 }
 
@@ -172,11 +172,16 @@ void CMyFs::DisplayAllFSRecursive(std::shared_ptr<CFileSystemDir>& FileSystemDat
     DisplayAllFSRecursive(it.second, FSlevel + 1);
   }
 
-  for (auto &it : FileSystemDataPtr->m_MapFileName)
+  for (auto &it : FileSystemDataPtr->m_SetFileName)
   {
-    DisplayFS(it.first, FSlevel, EFSType::FILE);
+    DisplayFS(it, FSlevel, EFSType::FILE);
   }
 
+
+  for (auto &it : FileSystemDataPtr->m_MapLinkName)
+  {
+    DisplayLink(it.first, it.second, FileSystemDataPtr, FSlevel);
+  }
 }
 
 void CMyFs::DeleteDirRecursive(std::shared_ptr<CFileSystemDir>& FileSystemDataPtr)
@@ -189,37 +194,58 @@ void CMyFs::DeleteDirRecursive(std::shared_ptr<CFileSystemDir>& FileSystemDataPt
     }
   }
   FileSystemDataPtr->m_MapDirName.clear();
-  FileSystemDataPtr->m_MapFileName.clear();
+  FileSystemDataPtr->m_SetFileName.clear();
 }
 
-bool CMyFs::DeleteDir(std::shared_ptr<CFileSystemDir>& FileSystemDataPtr, std::string& FsToBeDeleted)
+bool CMyFs::DeleteDirInFS(std::shared_ptr<CFileSystemDir>& FileSystemDataPtr, std::string& FsToBeDeleted)
 {
-  bool FoundMatchDir = (FileSystemDataPtr->m_MapDirName.find(FsToBeDeleted) != FileSystemDataPtr->m_MapDirName.end());
+  FsNs::TMapDir& MapDirName = FileSystemDataPtr->m_MapDirName;
+  bool FoundMatchDir = (MapDirName.find(FsToBeDeleted) != MapDirName.end());
   if (FoundMatchDir)
   {
-    DeleteDirRecursive(FileSystemDataPtr->m_MapDirName[FsToBeDeleted]);
-    FileSystemDataPtr->m_MapDirName.erase(FsToBeDeleted);
+    DeleteDirRecursive(MapDirName[FsToBeDeleted]);
+    MapDirName.erase(FsToBeDeleted);
+  }
+  if (MapDirName.size() <= 0)  //  No more elements, clear map
+  {
+    MapDirName.clear();
   }
 
   return FoundMatchDir;
 }
 
-bool CMyFs::DeleteFile(std::shared_ptr<CFileSystemDir>& FileSystemDataPtr, std::string& FsToBeDeleted)
+bool CMyFs::DeleteFileInFS(std::shared_ptr<CFileSystemDir>& FileSystemDataPtr, std::string& FsToBeDeleted)
 {
-  bool FoundMatchFile = (FileSystemDataPtr->m_MapFileName.find(FsToBeDeleted) != FileSystemDataPtr->m_MapFileName.end());
+  FsNs::TSetFile& SetFileName = FileSystemDataPtr->m_SetFileName;
+  bool FoundMatchFile = (SetFileName.find(FsToBeDeleted) != SetFileName.end());
   if (FoundMatchFile)
   {
-    FileSystemDataPtr->m_MapFileName.erase(FsToBeDeleted);
+    SetFileName.erase(FsToBeDeleted);
   }
-  if (FileSystemDataPtr->m_MapFileName.size() <= 0)  //  No more elements, clear map
+  if (SetFileName.size() <= 0)  //  No more elements, clear map
   {
-    FileSystemDataPtr->m_MapFileName.clear();
+    SetFileName.clear();
+  }
+  return FoundMatchFile;
+}
+
+bool CMyFs::DeleteLinkInFS(std::shared_ptr<CFileSystemDir>& FileSystemDataPtr, std::string& FsToBeDeleted)
+{
+  FsNs::TMapLink& MapLinkName = FileSystemDataPtr->m_MapLinkName;
+  bool FoundMatchFile = (MapLinkName.find(FsToBeDeleted) != MapLinkName.end());
+  if (FoundMatchFile)
+  {
+    MapLinkName.erase(FsToBeDeleted);
+  }
+  if (MapLinkName.size() <= 0)  //  No more elements, clear map
+  {
+    MapLinkName.clear();
   }
   return FoundMatchFile;
 }
 
 
-bool CMyFs::DeleteElementInFs(std::vector<std::string>& VecFSNames)
+bool CMyFs::DeleteElementInFs(std::vector<std::string>& VecFSNames, EFSType FSType)
 {
   bool ElementDeleted = false;
   if (VecFSNames.size() >= 0)
@@ -229,17 +255,45 @@ bool CMyFs::DeleteElementInFs(std::vector<std::string>& VecFSNames)
     bool FoundMatchFs = SearchInDirs(VecFSNames, FsToBeDeleted, FileSystemDataPtr);
     if (FileSystemDataPtr)
     {
-      bool Deleted = DeleteDir(FileSystemDataPtr, FsToBeDeleted);
-      if (Deleted == false)
+      switch (FSType)
       {
-        bool Deleted = DeleteFile(FileSystemDataPtr, FsToBeDeleted);
+      case EFSType::DIR:
+        ElementDeleted = DeleteDirInFS(FileSystemDataPtr, FsToBeDeleted);
+        break;
+      case EFSType::FILE:
+        ElementDeleted = DeleteFileInFS(FileSystemDataPtr, FsToBeDeleted);
+        break;
+      case EFSType::LINK:
+        ElementDeleted = DeleteLinkInFS(FileSystemDataPtr, FsToBeDeleted);
+        break;
+
       }
     }
   }
   return ElementDeleted;
 }
 
-bool CMyFs::AddElementToFs(std::vector<std::string>& VecFSNames, EFSType FSType)
+bool CMyFs::AddLinkToFs(std::vector<std::string>& VecFSNames, std::string LinkName, std::string LinkedElement)
+{
+  bool Ok = false;
+  if (VecFSNames.size() >= 0)
+  {
+    std::shared_ptr<CFileSystemDir> FileSystemDataPtr = GetDirInFs(VecFSNames);
+    if (FileSystemDataPtr)  // Legal path to add element
+    {
+      // Check if link is already exist in this directory
+      bool FoundMatchFs = (FileSystemDataPtr->m_MapLinkName.find(LinkName) != FileSystemDataPtr->m_MapLinkName.end());
+      if (FoundMatchFs == false)
+      {
+        FileSystemDataPtr->m_MapLinkName[LinkName] = LinkedElement;
+        Ok = true;
+      }
+    }
+  }
+  return Ok;
+}
+
+bool CMyFs::AddFileOrDirToFs(std::vector<std::string>& VecFSNames, EFSType FSType)
 {
   bool Ok = false;
   if (VecFSNames.size() >= 0)
@@ -248,13 +302,13 @@ bool CMyFs::AddElementToFs(std::vector<std::string>& VecFSNames, EFSType FSType)
     std::shared_ptr<CFileSystemDir> FileSystemDataPtr;
     bool FoundMatchFs = false;
     SearchInDirs(VecFSNames, FsToBeAdded, FileSystemDataPtr);
-    if (FileSystemDataPtr)  // Legal path to add directory;
+    if (FileSystemDataPtr)  // Legal path to add element
     {
       // Now look if there is a file or directory that match this new FS name
       FoundMatchFs = (FileSystemDataPtr->m_MapDirName.find(FsToBeAdded) != FileSystemDataPtr->m_MapDirName.end());
       if (FoundMatchFs == false)
       {
-        FoundMatchFs = (FileSystemDataPtr->m_MapFileName.find(FsToBeAdded) != FileSystemDataPtr->m_MapFileName.end());
+        FoundMatchFs = (FileSystemDataPtr->m_SetFileName.find(FsToBeAdded) != FileSystemDataPtr->m_SetFileName.end());
       }
     }
     if ((FoundMatchFs == false) && (FileSystemDataPtr))
@@ -265,10 +319,7 @@ bool CMyFs::AddElementToFs(std::vector<std::string>& VecFSNames, EFSType FSType)
         FileSystemDataPtr->m_MapDirName[FsToBeAdded] = std::make_shared<CFileSystemDir>();
         break;
       case EFSType::FILE:
-        FileSystemDataPtr->m_MapFileName[FsToBeAdded] = std::make_shared<CFileSystemDir>();
-        break;
-      case EFSType::LINK:
-        FileSystemDataPtr->m_MapFileName[FsToBeAdded] = std::make_shared<CFileSystemDir>();
+        FileSystemDataPtr->m_SetFileName.insert(FsToBeAdded);
         break;
       }
       Ok = true;
@@ -287,7 +338,7 @@ bool CMyFs::AddDir(std::string DirNameFullPath)
   bool Ok = ValidFSName(VecFSNames, EFSType::DIR);
   if (Ok)
   {
-    Ok = AddElementToFs(VecFSNames, EFSType::DIR);
+    Ok = AddFileOrDirToFs(VecFSNames, EFSType::DIR);
     if (Ok == false)
     {
       SetReturnCode(EFSReturnCodeId::ErrCannotAddDir);
@@ -312,7 +363,7 @@ bool CMyFs::AddFile(std::string FileNameFullPath)
   bool Ok = ValidFSName(VecFSNames, EFSType::FILE);
   if (Ok)
   {
-    Ok = AddElementToFs(VecFSNames, EFSType::FILE);
+    Ok = AddFileOrDirToFs(VecFSNames, EFSType::FILE);
     if (Ok == false)
     {
       SetReturnCode(EFSReturnCodeId::ErrCannotAddFile);
@@ -330,23 +381,27 @@ bool CMyFs::AddFile(std::string FileNameFullPath)
   return Ok;
 }
 
-bool CMyFs::AddLink(std::string LinkName, std::string LinkFileOrDirNameFullPath)
+bool CMyFs::AddLink(std::string PathFileOfTheLink, std::string LinkName, std::string LinkedElement)
 {
   SetReturnCodeOk();
   std::vector<std::string> VecFSNames;
-  SplitFullPathToVector(LinkFileOrDirNameFullPath, VecFSNames);
-  bool Ok = ValidFSName(VecFSNames, EFSType::FILE);
+  SplitFullPathToVector(PathFileOfTheLink, VecFSNames);
+  bool Ok = true;
+  if (VecFSNames.size() > 0)
+  {
+    Ok = ValidFSName(VecFSNames, EFSType::LINK);
+  }
   if (Ok)
   {
-    Ok = AddElementToFs(VecFSNames, EFSType::FILE);
+    Ok = AddLinkToFs(VecFSNames, LinkName, LinkedElement);
     if (Ok == false)
     {
-      SetReturnCode(EFSReturnCodeId::ErrCannotAddFile);
+      SetReturnCode(EFSReturnCodeId::ErrCannotAddLink);
     }
   }
   else
   {
-    SetReturnCode(EFSReturnCodeId::ErrFileNameIsInvalid);
+    SetReturnCode(EFSReturnCodeId::ErrLinkNameIsInvalid);
   }
 #ifdef DISPLAY_DEBUG
   std::cout << "Ok=" << Ok << std::endl;
@@ -354,6 +409,21 @@ bool CMyFs::AddLink(std::string LinkName, std::string LinkFileOrDirNameFullPath)
   DisplayReturnCode();
 
   return Ok;
+}
+
+bool CMyFs::DeleteDir(std::string FileNameFullPath)
+{
+  return DeleteElement(FileNameFullPath, EFSType::DIR);
+}
+
+bool CMyFs::DeleteFile(std::string FileNameFullPath)
+{
+  return DeleteElement(FileNameFullPath, EFSType::FILE);
+}
+
+bool CMyFs::DeleteLink(std::string FileNameFullPath)
+{
+  return DeleteElement(FileNameFullPath, EFSType::LINK);
 }
 
 void CMyFs::DisplayAllFS()
@@ -362,19 +432,17 @@ void CMyFs::DisplayAllFS()
 }
 
 
-bool CMyFs::DeleteElement(std::string FileNameFullPath)
+bool CMyFs::DeleteElement(std::string FileNameFullPath, EFSType FSType)
 {
   SetReturnCodeOk();
   std::vector<std::string> VecFSNames;
   SplitFullPathToVector(FileNameFullPath, VecFSNames);
 
-  bool elementDeleted = DeleteElementInFs(VecFSNames);
+  bool elementDeleted = DeleteElementInFs(VecFSNames, FSType);
   if (elementDeleted == false)
   {
     SetReturnCode(EFSReturnCodeId::ErrCannotDelete);
   }
-
-
   DisplayReturnCode();
   return elementDeleted;
 }
@@ -387,11 +455,16 @@ int main()
   MyFs.AddDir("A");
   MyFs.AddDir("A.dat");
   MyFs.AddFile("A.dat");
+  MyFs.AddLink("", "ZZZ", "A.dat");
+  MyFs.AddLink("", "ZZZ", "B.dat");
   MyFs.AddFile("A.");
   MyFs.AddFile("AX_C");
   MyFs.AddFile("Z");
   MyFs.AddDir("A/B");
   MyFs.AddDir("A/B/C");
+  MyFs.AddLink("A/B", "YYY", "C");
+  MyFs.AddLink("A/B", "YYY", "Q");
+  MyFs.AddLink("A/B", "QQQ", "Q");
   MyFs.AddDir("A/B/D.dat");
   MyFs.AddFile("A/B/D.dat");
   MyFs.DisplayAllFS();
@@ -415,18 +488,20 @@ int main()
   MyFs.AddFile("A/C/D/S.dat");
   MyFs.DisplayAllFS();
 
-  MyFs.DeleteElement("A/C/D/Y.dat");
-  MyFs.DeleteElement("A/C/D/Z.dat");
-  MyFs.DeleteElement("A/C/D/S.dat");
-  MyFs.DeleteElement("A/C");
+  MyFs.DeleteFile("A/C/D/Y.dat");
+  MyFs.DeleteFile("A/C/D/Z.dat");
+  MyFs.DeleteFile("A/C/D/S.dat");
+  MyFs.DeleteDir("A/C");
   MyFs.DisplayAllFS();
 
-  MyFs.DeleteElement("A/C/D/Y.dat");
-  MyFs.DeleteElement("A.dat");
-  MyFs.DeleteElement("A.dat");
+  MyFs.DeleteLink("A/B/YYY");
+  MyFs.DeleteLink("A/B/QQQ");
+  MyFs.DeleteLink("A/B/ZZZ");
+
+  MyFs.DeleteFile("A/C/D/Y.dat");
+  MyFs.DeleteFile("D.dat");
+  MyFs.DeleteFile("A.dat");
   MyFs.DisplayAllFS();
-
-
 
   exit(0);
 }
