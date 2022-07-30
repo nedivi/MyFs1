@@ -8,10 +8,11 @@
 
 class CFileSystemDir;
 
+// File system namespace
 namespace FsNs
 {
   enum class EFSType { FILE, DIR, LINK };  // File system type
-  const int MAX_FS_TYPES = 3;  // 3 types of FS (File/Link/Dir)
+  const int MAX_FS_TYPES = (int)EFSType::LINK + 1;  // 3 types of FS (File/Link/Dir)
 
   // Directory structure
   typedef std::map<std::string, std::shared_ptr<CFileSystemDir> > TMapDir;  // Map between the directory name to it's subdirectory
@@ -83,7 +84,7 @@ private:
     }
   };
 
-  // Map from EFSType to string that represent the Fstype
+  // Map from EFSType to string that represent the EFSType
   std::map<FsNs::EFSType, std::string> m_MapFSType2FString =
   {
     {FsNs::EFSType::FILE, "file"},
@@ -110,6 +111,7 @@ private:
     void AddSum(FsNs::EFSType FSType, int Level, int count);
     int GetSum(FsNs::EFSType FSType, int Level);
     int GetSumAll(FsNs::EFSType FSType);
+    int GetSumAll();
   };
   FSStatistics m_FSStatistics;
   bool m_DisplayRc = false; // Display Return code, by default do not display

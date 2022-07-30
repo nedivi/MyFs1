@@ -6,7 +6,7 @@
 namespace fs = std::filesystem;
 using namespace FsNs;
 
-#define  DISPLAY_DEBUG 1
+//#define  DISPLAY_DEBUG 1
 
 CMyFs::CMyFs()
 {
@@ -39,6 +39,7 @@ bool CMyFs::ValidDirName(std::string& DirName)
 
 }
 
+// Test if VecStrings in valid path
 bool CMyFs::ValidDirsName(std::vector<std::string>& VecStrings)
 {
   bool Ok = false;
@@ -57,7 +58,6 @@ bool CMyFs::ValidFSName(std::vector<std::string>& VecFSNames, EFSType FSType)
 {
   bool Ok = false;
   int cnt = 0;
-  //  size_t lastElementCnt = (FSType == EFSType::LINK) ? VecFSNames.size() : VecFSNames.size() - 1;
   size_t lastElementCnt = VecFSNames.size() - 1;
 
   for (auto &it : VecFSNames)
@@ -92,7 +92,7 @@ bool CMyFs::ValidFSName(std::vector<std::string>& VecFSNames, EFSType FSType)
   return Ok;
 }
 
-
+// Display the RC from the dictionary 
 void CMyFs::DisplayReturnCode(FsNs::EFSReturnCodeId ReturnCodeId)
 {
   if (m_DisplayRc)
@@ -114,7 +114,7 @@ void CMyFs::SplitFullPathToVector(std::string& FileNameFullPath, std::vector<std
     std::string MyString(p.string());
     VecFSNames.push_back(MyString);
 #ifdef DISPLAY_DEBUG
-    //    std::cout << "MyString=" << MyString << std::endl;
+    std::cout << "MyString=" << MyString << std::endl;
 #endif
   }
 
@@ -172,9 +172,9 @@ void CMyFs::DisplayLink(std::string LinkName, std::string FStoBeLinked, std::sha
   std::string StrExistLink = FoundMatchFs ? LINK_EXIST : LINK_NOT_EXIST;
   std::string LinkNameToDisplay = StrExistLink + LINK_SIMBOL + LinkName;
   DisplayFS(LinkNameToDisplay, FSLevel, EFSType::LINK);
-
 }
 
+// Recursively collect statistics of 
 void CMyFs::StatAllFSRecursive(std::shared_ptr<CFileSystemDir>& FileSystemDataPtr, int FSlevel)
 {
 
@@ -189,11 +189,10 @@ void CMyFs::StatAllFSRecursive(std::shared_ptr<CFileSystemDir>& FileSystemDataPt
   }
 }
 
+// Recursively display all FS (dirs/files/links)
 void CMyFs::DisplayAllFSRecursive(std::shared_ptr<CFileSystemDir>& FileSystemDataPtr, int FSlevel)
 {
   // Dir section
-
-
   for (auto &it : FileSystemDataPtr->m_MapDirName)
   {
     DisplayFS(it.first, FSlevel, EFSType::DIR);
@@ -202,7 +201,6 @@ void CMyFs::DisplayAllFSRecursive(std::shared_ptr<CFileSystemDir>& FileSystemDat
 
 
   // File section
-
   for (auto &it : FileSystemDataPtr->m_SetFileName)
   {
     DisplayFS(it, FSlevel, EFSType::FILE);
@@ -215,6 +213,7 @@ void CMyFs::DisplayAllFSRecursive(std::shared_ptr<CFileSystemDir>& FileSystemDat
   }
 }
 
+// Delete dir recursively (Dir/Files/Links)
 void CMyFs::DeleteDirRecursive(std::shared_ptr<CFileSystemDir>& FileSystemDataPtr)
 {
   if (FileSystemDataPtr->m_MapDirName.empty() == false)  // More subdirectories
@@ -432,6 +431,7 @@ FsNs::EFSReturnCodeId CMyFs::AddLink(std::string PathFileOfTheLink, std::string 
   return ReturnCodeId;
 }
 
+// Delete directory "FileNameFullPath"
 FsNs::EFSReturnCodeId CMyFs::DeleteDir(std::string FileNameFullPath)
 {
   EFSReturnCodeId ReturnCodeId = (DeleteElement(FileNameFullPath, EFSType::DIR)) ? EFSReturnCodeId::Ok : EFSReturnCodeId::ErrCannotDeleteDir;
@@ -439,6 +439,7 @@ FsNs::EFSReturnCodeId CMyFs::DeleteDir(std::string FileNameFullPath)
   return ReturnCodeId;
 }
 
+// Delete File "FileNameFullPath"
 FsNs::EFSReturnCodeId CMyFs::DeleteFile(std::string FileNameFullPath)
 {
   EFSReturnCodeId ReturnCodeId = (DeleteElement(FileNameFullPath, EFSType::FILE)) ? EFSReturnCodeId::Ok : EFSReturnCodeId::ErrCannotDeleteFile;
@@ -446,6 +447,7 @@ FsNs::EFSReturnCodeId CMyFs::DeleteFile(std::string FileNameFullPath)
   return ReturnCodeId;
 }
 
+// Delete Link "FileNameFullPath"
 FsNs::EFSReturnCodeId CMyFs::DeleteLink(std::string FileNameFullPath)
 {
   EFSReturnCodeId ReturnCodeId = (DeleteElement(FileNameFullPath, EFSType::LINK)) ? EFSReturnCodeId::Ok : EFSReturnCodeId::ErrCannotDeleteLink;
@@ -454,7 +456,7 @@ FsNs::EFSReturnCodeId CMyFs::DeleteLink(std::string FileNameFullPath)
 }
 
 
-
+// Recursively display all FS to stdout
 void CMyFs::DisplayAllFS()
 {
   std::cout << "-------------  Display All FS elements ------------" << std::endl;
@@ -462,6 +464,7 @@ void CMyFs::DisplayAllFS()
   std::cout << "---------------------------------------------------" << std::endl;
 }
 
+// Collect Statistics for ALl FS (Sum of Dirs/Files/Links)
 void CMyFs::CollectStatisticsAllFS()
 {
   m_FSStatistics.ClearAll();
@@ -517,6 +520,7 @@ void CMyFs::FSStatistics::AddSum(FsNs::EFSType FSType, int Level, int count)
   }
 }
 
+//  Get sum of all FS of FSType of specific Level
 int CMyFs::FSStatistics::GetSum(FsNs::EFSType FSType, int Level)
 {
 
@@ -525,6 +529,7 @@ int CMyFs::FSStatistics::GetSum(FsNs::EFSType FSType, int Level)
   return foundKey ? MapStatFSLevel2Count[Level] : 0;
 }
 
+//  Get sum of all FS of FSType
 int CMyFs::FSStatistics::GetSumAll(FsNs::EFSType FSType)
 {
 
@@ -535,4 +540,15 @@ int CMyFs::FSStatistics::GetSumAll(FsNs::EFSType FSType)
     count += it.second;
   }
   return count;
+}
+
+//  Get sum of all FS of FSType
+int CMyFs::FSStatistics::GetSumAll()
+{
+  int Sum = 0;
+  for (int i = 0; i < MAX_FS_TYPES; ++i)
+  {
+    Sum += GetSumAll((FsNs::EFSType) i);
+  }
+  return Sum;
 }

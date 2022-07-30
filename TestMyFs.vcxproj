@@ -35,6 +35,8 @@
     <ClCompile Include="MyFs.cpp" />
     <ClCompile Include="TestMain.cpp" />
     <ClCompile Include="TestMyFsAddElement.cpp" />
+    <ClCompile Include="TestMyFsDeleteElement.cpp" />
+    <ClCompile Include="TestMyFsMisc.cpp" />
     <ClCompile Include="TestMyFsStress.cpp" />
   </ItemGroup>
   <ItemDefinitionGroup />

@@ -1,11 +1,10 @@
 #include "MyFs.h"
 #include <iostream>
 
-int main()
+void Mytest1()
 {
   CMyFs MyFs;
   MyFs.SetDisplayRc(true);
-  //  std::string MyDir1("A/B/C");
   MyFs.AddDir("A");
   MyFs.AddDir("A");
   MyFs.AddDir("A.dat");
@@ -60,6 +59,12 @@ int main()
   MyFs.DeleteFile("D.dat");
   MyFs.DeleteFile("A.dat");
   MyFs.DisplayAllFS();
+}
+
+int main()
+{
+
+  Mytest1();
 
   exit(0);
 }
