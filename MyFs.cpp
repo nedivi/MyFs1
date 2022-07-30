@@ -13,6 +13,12 @@ CMyFs::CMyFs()
   m_FileSystemData = std::make_shared<CFileSystemDir>();
 }
 
+CMyFs::~CMyFs()
+{
+  DeleteDirRecursive(m_FileSystemData);
+}
+
+// File name validation , Currently alfa-beta with 2 sections (like "doc.txt")
 bool CMyFs::ValidFileName(std::string& FileName)
 {
   static std::regex  regex("^[a-zA-Z]+\\.[a-zA-Z]+");
@@ -25,6 +31,7 @@ bool CMyFs::ValidLinkName(std::string& FileName)
   return ValidDirName(FileName);
 }
 
+// Directory name validation , Currently alfa-beta with 1 sections (like "doc")
 bool CMyFs::ValidDirName(std::string& DirName)
 {
   static std::regex  regex("^[a-zA-Z]+");
@@ -137,11 +144,12 @@ bool CMyFs::SearchInDirs(std::vector<std::string>& VecFSNames, std::string& FsTo
 {
   bool FoundMatchFs = false;
   FsToBeAdded = VecFSNames.back();  // The dir name to be added
-  VecFSNames.pop_back();   // Take out the dir name to be added 
+  VecFSNames.pop_back();            // Take out the dir name to be added 
   FileSystemDataPtr = GetDirInFs(VecFSNames);
   return FoundMatchFs;
 }
 
+// Display FS In hierarchy mode 
 void CMyFs::DisplayFS(std::string FSName, int FSLevel, EFSType FSType)
 {
   for (int i = 0; i < FSLevel; ++i)
@@ -158,8 +166,8 @@ void CMyFs::DisplayLink(std::string LinkName, std::string FStoBeLinked, std::sha
   {
     FoundMatchFs = (FileSystemDataPtr->m_SetFileName.find(FStoBeLinked) != FileSystemDataPtr->m_SetFileName.end());
   }
-  std::string StrExistLink = FoundMatchFs ? "" : "!";
-  std::string LinkNameToDisplay = StrExistLink + "@" + LinkName;
+  std::string StrExistLink = FoundMatchFs ? LINK_EXIST : LINK_NOT_EXIST;
+  std::string LinkNameToDisplay = StrExistLink + LINK_SIMBOL + LinkName;
   DisplayFS(LinkNameToDisplay, FSLevel, EFSType::LINK);
 
 }
@@ -176,7 +184,6 @@ void CMyFs::DisplayAllFSRecursive(std::shared_ptr<CFileSystemDir>& FileSystemDat
   {
     DisplayFS(it, FSlevel, EFSType::FILE);
   }
-
 
   for (auto &it : FileSystemDataPtr->m_MapLinkName)
   {
@@ -195,6 +202,7 @@ void CMyFs::DeleteDirRecursive(std::shared_ptr<CFileSystemDir>& FileSystemDataPt
   }
   FileSystemDataPtr->m_MapDirName.clear();
   FileSystemDataPtr->m_SetFileName.clear();
+  FileSystemDataPtr->m_MapLinkName.clear();
 }
 
 bool CMyFs::DeleteDirInFS(std::shared_ptr<CFileSystemDir>& FileSystemDataPtr, std::string& FsToBeDeleted)
@@ -316,13 +324,14 @@ bool CMyFs::AddFileOrDirToFs(std::vector<std::string>& VecFSNames, EFSType FSTyp
       switch (FSType)
       {
       case EFSType::DIR:
+        Ok = true;
         FileSystemDataPtr->m_MapDirName[FsToBeAdded] = std::make_shared<CFileSystemDir>();
         break;
       case EFSType::FILE:
+        Ok = true;
         FileSystemDataPtr->m_SetFileName.insert(FsToBeAdded);
         break;
       }
-      Ok = true;
     }
   }
   return Ok;
@@ -447,61 +456,50 @@ bool CMyFs::DeleteElement(std::string FileNameFullPath, EFSType FSType)
   return elementDeleted;
 }
 
-int main()
+// Statistics on FS data
+CMyFs::FSStatistics::FSStatistics()
 {
-  CMyFs MyFs;
-  //  std::string MyDir1("A/B/C");
-  MyFs.AddDir("A");
-  MyFs.AddDir("A");
-  MyFs.AddDir("A.dat");
-  MyFs.AddFile("A.dat");
-  MyFs.AddLink("", "ZZZ", "A.dat");
-  MyFs.AddLink("", "ZZZ", "B.dat");
-  MyFs.AddFile("A.");
-  MyFs.AddFile("AX_C");
-  MyFs.AddFile("Z");
-  MyFs.AddDir("A/B");
-  MyFs.AddDir("A/B/C");
-  MyFs.AddLink("A/B", "YYY", "C");
-  MyFs.AddLink("A/B", "YYY", "Q");
-  MyFs.AddLink("A/B", "QQQ", "Q");
-  MyFs.AddDir("A/B/D.dat");
-  MyFs.AddFile("A/B/D.dat");
-  MyFs.DisplayAllFS();
+  ClearAll();
+}
 
-  MyFs.AddDir("A/C/D");
-  MyFs.AddDir("A/C/E");
-  MyFs.AddDir("A/C/F");
-  MyFs.AddDir("A/C/G");
-  MyFs.DisplayAllFS();
+void CMyFs::FSStatistics::ClearAll()
+{
+  for (auto &it : m_MapStat)
+  {
+    it.clear();
+  }
+}
 
-  MyFs.AddFile("A/C/D/Y.dat");
-  MyFs.AddFile("A/C/D/Z.dat");
-  MyFs.AddFile("A/C/D/S.dat");
-  MyFs.AddDir("A/C");
-  MyFs.AddFile("A/C/D/Y.dat");
-  MyFs.AddDir("A/C/D");
-  MyFs.DisplayAllFS();
+void CMyFs::FSStatistics::AddCount(FsNs::EFSType FSType, int Level, int count)
+{
 
-  MyFs.AddFile("A/C/D/Y.dat");
-  MyFs.AddFile("A/C/D/Z.dat");
-  MyFs.AddFile("A/C/D/S.dat");
-  MyFs.DisplayAllFS();
+  TMapStatFSLevel2Count& MapStatFSLevel2Count = m_MapStat[(int)FSType];
+  if (MapStatFSLevel2Count.find(Level) == MapStatFSLevel2Count.end())
+  {
+    MapStatFSLevel2Count[Level] = count;
+  }
+  else
+  {
+    MapStatFSLevel2Count[Level] = count;
+  }
+}
 
-  MyFs.DeleteFile("A/C/D/Y.dat");
-  MyFs.DeleteFile("A/C/D/Z.dat");
-  MyFs.DeleteFile("A/C/D/S.dat");
-  MyFs.DeleteDir("A/C");
-  MyFs.DisplayAllFS();
+int CMyFs::FSStatistics::GetCount(FsNs::EFSType FSType, int Level)
+{
 
-  MyFs.DeleteLink("A/B/YYY");
-  MyFs.DeleteLink("A/B/QQQ");
-  MyFs.DeleteLink("A/B/ZZZ");
+  TMapStatFSLevel2Count& MapStatFSLevel2Count = m_MapStat[(int)FSType];
+  bool foundKey = (MapStatFSLevel2Count.find(Level) != MapStatFSLevel2Count.end());
+  return foundKey ? MapStatFSLevel2Count[Level] : 0;
+}
 
-  MyFs.DeleteFile("A/C/D/Y.dat");
-  MyFs.DeleteFile("D.dat");
-  MyFs.DeleteFile("A.dat");
-  MyFs.DisplayAllFS();
+int CMyFs::FSStatistics::GetCountAll(FsNs::EFSType FSType)
+{
 
-  exit(0);
+  TMapStatFSLevel2Count& MapStatFSLevel2Count = m_MapStat[(int)FSType];
+  int count = 0;
+  for (auto &it : MapStatFSLevel2Count)
+  {
+    count += it.second;
+  }
+  return count;
 }

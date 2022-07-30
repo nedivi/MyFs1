@@ -1,5 +1,3 @@
-#ifndef _MYFS_H_
-#define _MYFS_H_
 
 #include <string>
 #include <map>
@@ -12,6 +10,7 @@ class CFileSystemDir;
 namespace FsNs
 {
   enum class EFSType { FILE, DIR, LINK };  // File system type
+  const int MAX_FS_TYPES = 3;  // 3 types of FS (File/Link/Dir)
   //typedef  std::string TFILE_NAME;
   //typedef std::pair<std::string, EFileType> TFsAttr;
 
@@ -38,20 +37,12 @@ namespace FsNs
     ErrCannotDelete
   };
 
-  std::map< EFSReturnCodeId, std::string> MapReturnCodeId2Str = {
-    {
-      {EFSReturnCodeId::Ok,                       "Ok"},
-      {EFSReturnCodeId::ErrFileNameIsInvalid,     "File name is invalid"},
-      {EFSReturnCodeId::ErrCannotAddFile,         "Cannot add file, illegal path"},
-      {EFSReturnCodeId::ErrDirNameIsInvalid,      "Directory name is invalid"},
-      {EFSReturnCodeId::ErrCannotAddDir,          "Cannot add directory, illegal path"},
-      {EFSReturnCodeId::ErrLinkNameIsInvalid,     "Link name is invalid"},
-      {EFSReturnCodeId::ErrCannotAddLink,         "Cannot add link, illegal path"},
-      {EFSReturnCodeId::ErrCannotDelete,          "Cannot delete element"},
 
-    }
-  };
 }
+
+
+#ifndef _MYFS_H_
+#define _MYFS_H_
 
 
 // Files System Data
@@ -71,16 +62,49 @@ public:
 class CMyFs {
 private:
   // Variables
+
+  std::map< FsNs::EFSReturnCodeId, std::string> MapReturnCodeId2Str = {
+    {
+      {FsNs::EFSReturnCodeId::Ok,                       "Ok"},
+      {FsNs::EFSReturnCodeId::ErrFileNameIsInvalid,     "File name is invalid"},
+      {FsNs::EFSReturnCodeId::ErrCannotAddFile,         "Cannot add file, illegal path"},
+      {FsNs::EFSReturnCodeId::ErrDirNameIsInvalid,      "Directory name is invalid"},
+      {FsNs::EFSReturnCodeId::ErrCannotAddDir,          "Cannot add directory, illegal path"},
+      {FsNs::EFSReturnCodeId::ErrLinkNameIsInvalid,     "Link name is invalid"},
+      {FsNs::EFSReturnCodeId::ErrCannotAddLink,         "Cannot add link, illegal path"},
+      {FsNs::EFSReturnCodeId::ErrCannotDelete,          "Cannot delete element"},
+
+    }
+  };
+
   std::map<FsNs::EFSType, std::string> m_MapFSType2FString =
   {
     {FsNs::EFSType::FILE, "[file]"},
     {FsNs::EFSType::DIR,  "[dir]"},
     {FsNs::EFSType::LINK, "[link]"}
-
   };
+  const std::string LINK_SIMBOL = "@";
+  const std::string LINK_NOT_EXIST = "!";
+  const std::string LINK_EXIST = "";
+
+  const int MAX_LEVEL_IN_FS_FOR_STAT = 1000;
 
   std::shared_ptr<CFileSystemDir> m_FileSystemData;
   FsNs::EFSReturnCodeId m_FSReturnCodeId = FsNs::EFSReturnCodeId::Ok;
+  typedef std::map<int, int> TMapStatFSLevel2Count;
+
+  class FSStatistics
+  {
+  private:
+    TMapStatFSLevel2Count m_MapStat[FsNs::MAX_FS_TYPES];
+  public:
+    FSStatistics();
+    void ClearAll();
+    void AddCount(FsNs::EFSType FSType, int Level, int count);
+    int GetCount(FsNs::EFSType FSType, int Level);
+    int GetCountAll(FsNs::EFSType FSType);
+  };
+  FSStatistics m_FSStatistics;
 
   // Functions
   void SetReturnCodeOk() { m_FSReturnCodeId = FsNs::EFSReturnCodeId::Ok; }
@@ -110,6 +134,7 @@ private:
 
 public:
   CMyFs();
+  ~CMyFs();
   bool AddDir(std::string DirNameFullPath);
   bool AddFile(std::string FileNameFullPath);
   //  bool AddLink(std::string LinkName, std::string LinkFileOrDirNameFullPath);
