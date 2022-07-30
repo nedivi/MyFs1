@@ -11,8 +11,6 @@ namespace FsNs
 {
   enum class EFSType { FILE, DIR, LINK };  // File system type
   const int MAX_FS_TYPES = 3;  // 3 types of FS (File/Link/Dir)
-  //typedef  std::string TFILE_NAME;
-  //typedef std::pair<std::string, EFileType> TFsAttr;
 
   // Directory structure
   typedef std::map<std::string, std::shared_ptr<CFileSystemDir> > TMapDir;  // Map between the directory name to it's subdirectory
@@ -79,15 +77,13 @@ private:
 
   std::map<FsNs::EFSType, std::string> m_MapFSType2FString =
   {
-    {FsNs::EFSType::FILE, "[file]"},
-    {FsNs::EFSType::DIR,  "[dir]"},
-    {FsNs::EFSType::LINK, "[link]"}
+    {FsNs::EFSType::FILE, "file"},
+    {FsNs::EFSType::DIR,  "dir"},
+    {FsNs::EFSType::LINK, "link"}
   };
   const std::string LINK_SIMBOL = "@";
   const std::string LINK_NOT_EXIST = "!";
   const std::string LINK_EXIST = "";
-
-  const int MAX_LEVEL_IN_FS_FOR_STAT = 1000;
 
   std::shared_ptr<CFileSystemDir> m_FileSystemData;
   FsNs::EFSReturnCodeId m_FSReturnCodeId = FsNs::EFSReturnCodeId::Ok;
@@ -97,10 +93,11 @@ private:
   {
   private:
     TMapStatFSLevel2Count m_MapStat[FsNs::MAX_FS_TYPES];
+    int m_MaxLevel = -1;  // Maximum level of directory
   public:
     FSStatistics();
     void ClearAll();
-    void AddCount(FsNs::EFSType FSType, int Level, int count);
+    void AddSum(FsNs::EFSType FSType, int Level, int count);
     int GetCount(FsNs::EFSType FSType, int Level);
     int GetCountAll(FsNs::EFSType FSType);
   };
@@ -116,6 +113,7 @@ private:
   bool SearchInDirs(std::vector<std::string>& VecFSNames, std::string& FsToBeAdded, std::shared_ptr<CFileSystemDir>& FileSystemDataPtr);
   void DisplayFS(std::string FSName, int FSLevel, FsNs::EFSType FSType);
   void DisplayLink(std::string LinkName, std::string FStoBeLinked, std::shared_ptr<CFileSystemDir>& FileSystemDataPtr, int FSLevel);
+  void StatAllFSRecursive(std::shared_ptr<CFileSystemDir>& FileSystemDataPtr, int FSlevel);
   void DisplayAllFSRecursive(std::shared_ptr<CFileSystemDir>& FileSystemDataPtr, int FSlevel);
   void DeleteDirRecursive(std::shared_ptr<CFileSystemDir>& FileSystemDataPtr);
   bool DeleteDirInFS(std::shared_ptr<CFileSystemDir>& FileSystemDataPtr, std::string& FsToBeDeleted);
@@ -143,6 +141,9 @@ public:
   bool DeleteFile(std::string FileNameFullPath);
   bool DeleteLink(std::string FileNameFullPath);
   void DisplayAllFS();
+  void CollectStatisticsAllFS();
+  void DisplaySumOfAllFS();
+
 };
 
 

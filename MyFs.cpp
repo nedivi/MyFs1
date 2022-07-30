@@ -92,6 +92,7 @@ bool CMyFs::ValidFSName(std::vector<std::string>& VecFSNames, EFSType FSType)
   return Ok;
 }
 
+
 void CMyFs::DisplayReturnCode()
 {
   std::string ReturnCodeStr("Return code not found");
@@ -156,7 +157,7 @@ void CMyFs::DisplayFS(std::string FSName, int FSLevel, EFSType FSType)
   {
     std::cout << "\t";
   }
-  std::cout << FSName << "\t" << m_MapFSType2FString[FSType] << std::endl;
+  std::cout << FSName << "\t" << "[" << m_MapFSType2FString[FSType] << "]" << std::endl;
 }
 
 void CMyFs::DisplayLink(std::string LinkName, std::string FStoBeLinked, std::shared_ptr<CFileSystemDir>& FileSystemDataPtr, int FSLevel)
@@ -172,19 +173,40 @@ void CMyFs::DisplayLink(std::string LinkName, std::string FStoBeLinked, std::sha
 
 }
 
+void CMyFs::StatAllFSRecursive(std::shared_ptr<CFileSystemDir>& FileSystemDataPtr, int FSlevel)
+{
+
+  m_FSStatistics.AddSum(EFSType::DIR, FSlevel, (int)FileSystemDataPtr->m_MapDirName.size());
+  m_FSStatistics.AddSum(EFSType::FILE, FSlevel, (int)FileSystemDataPtr->m_SetFileName.size());
+  m_FSStatistics.AddSum(EFSType::LINK, FSlevel, (int)FileSystemDataPtr->m_MapLinkName.size());
+
+
+  for (auto &it : FileSystemDataPtr->m_MapDirName)
+  {
+    StatAllFSRecursive(it.second, FSlevel + 1);
+  }
+}
+
 void CMyFs::DisplayAllFSRecursive(std::shared_ptr<CFileSystemDir>& FileSystemDataPtr, int FSlevel)
 {
+  // Dir section
+
+
   for (auto &it : FileSystemDataPtr->m_MapDirName)
   {
     DisplayFS(it.first, FSlevel, EFSType::DIR);
     DisplayAllFSRecursive(it.second, FSlevel + 1);
   }
 
+
+  // File section
+
   for (auto &it : FileSystemDataPtr->m_SetFileName)
   {
     DisplayFS(it, FSlevel, EFSType::FILE);
   }
 
+  // Link section
   for (auto &it : FileSystemDataPtr->m_MapLinkName)
   {
     DisplayLink(it.first, it.second, FileSystemDataPtr, FSlevel);
@@ -435,11 +457,30 @@ bool CMyFs::DeleteLink(std::string FileNameFullPath)
   return DeleteElement(FileNameFullPath, EFSType::LINK);
 }
 
+
+
 void CMyFs::DisplayAllFS()
 {
   DisplayAllFSRecursive(m_FileSystemData, 0);
 }
 
+void CMyFs::CollectStatisticsAllFS()
+{
+  m_FSStatistics.ClearAll();
+  StatAllFSRecursive(m_FileSystemData, 0);
+}
+
+
+void CMyFs::DisplaySumOfAllFS()
+{
+  CollectStatisticsAllFS();
+  std::cout << "------------- Sum of all FS ----------- " << std::endl;
+  for (int i = 0; i < MAX_FS_TYPES; ++i)
+  {
+    std::cout << "\t# of " << m_MapFSType2FString[(EFSType)i] << "  :  " << m_FSStatistics.GetCountAll((EFSType)i) << std::endl;
+  }
+  std::cout << "--------------------------------------- " << std::endl;
+}
 
 bool CMyFs::DeleteElement(std::string FileNameFullPath, EFSType FSType)
 {
@@ -470,9 +511,9 @@ void CMyFs::FSStatistics::ClearAll()
   }
 }
 
-void CMyFs::FSStatistics::AddCount(FsNs::EFSType FSType, int Level, int count)
+void CMyFs::FSStatistics::AddSum(FsNs::EFSType FSType, int Level, int count)
 {
-
+  m_MaxLevel = std::max(Level, m_MaxLevel);
   TMapStatFSLevel2Count& MapStatFSLevel2Count = m_MapStat[(int)FSType];
   if (MapStatFSLevel2Count.find(Level) == MapStatFSLevel2Count.end())
   {

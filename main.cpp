@@ -22,12 +22,14 @@ int main()
   MyFs.AddDir("A/B/D.dat");
   MyFs.AddFile("A/B/D.dat");
   MyFs.DisplayAllFS();
+  MyFs.DisplaySumOfAllFS();
 
   MyFs.AddDir("A/C/D");
   MyFs.AddDir("A/C/E");
   MyFs.AddDir("A/C/F");
   MyFs.AddDir("A/C/G");
   MyFs.DisplayAllFS();
+  MyFs.DisplaySumOfAllFS();
 
   MyFs.AddFile("A/C/D/Y.dat");
   MyFs.AddFile("A/C/D/Z.dat");
