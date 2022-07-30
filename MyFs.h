@@ -5,6 +5,10 @@
 #include <set>
 
 
+
+#ifndef _MYFS_H_
+#define _MYFS_H_
+
 class CFileSystemDir;
 
 namespace FsNs
@@ -37,10 +41,6 @@ namespace FsNs
 
 
 }
-
-
-#ifndef _MYFS_H_
-#define _MYFS_H_
 
 
 // Files System Data
@@ -143,6 +143,7 @@ public:
   void DisplayAllFS();
   void CollectStatisticsAllFS();
   void DisplaySumOfAllFS();
+  FsNs::EFSReturnCodeId GetReturnCode() { return m_FSReturnCodeId; }
 
 };
 
