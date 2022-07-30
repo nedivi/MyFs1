@@ -95,12 +95,15 @@ bool CMyFs::ValidFSName(std::vector<std::string>& VecFSNames, EFSType FSType)
 
 void CMyFs::DisplayReturnCode(FsNs::EFSReturnCodeId ReturnCodeId)
 {
-  std::string ReturnCodeStr("Return code not found");
-  if (m_MapReturnCodeId2Str.find(ReturnCodeId) != m_MapReturnCodeId2Str.end())
+  if (m_DisplayRc)
   {
-    ReturnCodeStr = m_MapReturnCodeId2Str[ReturnCodeId];
+    std::string ReturnCodeStr("Return code not found");
+    if (m_MapReturnCodeId2Str.find(ReturnCodeId) != m_MapReturnCodeId2Str.end())
+    {
+      ReturnCodeStr = m_MapReturnCodeId2Str[ReturnCodeId];
+    }
+    std::cout << "RC=" << (int)ReturnCodeId << "  - " << ReturnCodeStr << std::endl;
   }
-  std::cout << "RC=" << (int)ReturnCodeId << "  - " << ReturnCodeStr << std::endl;
 }
 
 void CMyFs::SplitFullPathToVector(std::string& FileNameFullPath, std::vector<std::string> &VecFSNames)
@@ -111,7 +114,7 @@ void CMyFs::SplitFullPathToVector(std::string& FileNameFullPath, std::vector<std
     std::string MyString(p.string());
     VecFSNames.push_back(MyString);
 #ifdef DISPLAY_DEBUG
-    std::cout << "MyString=" << MyString << std::endl;
+    //    std::cout << "MyString=" << MyString << std::endl;
 #endif
   }
 
@@ -431,27 +434,32 @@ FsNs::EFSReturnCodeId CMyFs::AddLink(std::string PathFileOfTheLink, std::string 
 
 FsNs::EFSReturnCodeId CMyFs::DeleteDir(std::string FileNameFullPath)
 {
-  bool ElementDeleted = DeleteElement(FileNameFullPath, EFSType::DIR);
-  return ElementDeleted ? EFSReturnCodeId::Ok : EFSReturnCodeId::ErrCannotDeleteDir;
+  EFSReturnCodeId ReturnCodeId = (DeleteElement(FileNameFullPath, EFSType::DIR)) ? EFSReturnCodeId::Ok : EFSReturnCodeId::ErrCannotDeleteDir;
+  DisplayReturnCode(ReturnCodeId);
+  return ReturnCodeId;
 }
 
 FsNs::EFSReturnCodeId CMyFs::DeleteFile(std::string FileNameFullPath)
 {
-  bool ElementDeleted = DeleteElement(FileNameFullPath, EFSType::FILE);
-  return ElementDeleted ? EFSReturnCodeId::Ok : EFSReturnCodeId::ErrCannotDeleteFile;
+  EFSReturnCodeId ReturnCodeId = (DeleteElement(FileNameFullPath, EFSType::FILE)) ? EFSReturnCodeId::Ok : EFSReturnCodeId::ErrCannotDeleteFile;
+  DisplayReturnCode(ReturnCodeId);
+  return ReturnCodeId;
 }
 
 FsNs::EFSReturnCodeId CMyFs::DeleteLink(std::string FileNameFullPath)
 {
-  bool ElementDeleted = DeleteElement(FileNameFullPath, EFSType::LINK);
-  return ElementDeleted ? EFSReturnCodeId::Ok : EFSReturnCodeId::ErrCannotDeleteLink;
+  EFSReturnCodeId ReturnCodeId = (DeleteElement(FileNameFullPath, EFSType::LINK)) ? EFSReturnCodeId::Ok : EFSReturnCodeId::ErrCannotDeleteLink;
+  DisplayReturnCode(ReturnCodeId);
+  return ReturnCodeId;
 }
 
 
 
 void CMyFs::DisplayAllFS()
 {
+  std::cout << "-------------  Display All FS elements ------------" << std::endl;
   DisplayAllFSRecursive(m_FileSystemData, 0);
+  std::cout << "---------------------------------------------------" << std::endl;
 }
 
 void CMyFs::CollectStatisticsAllFS()
@@ -467,7 +475,7 @@ void CMyFs::DisplaySumOfAllFS()
   std::cout << "------------- Sum of all FS ----------- " << std::endl;
   for (int i = 0; i < MAX_FS_TYPES; ++i)
   {
-    std::cout << "\t# of " << m_MapFSType2FString[(EFSType)i] << "  :  " << m_FSStatistics.GetCountAll((EFSType)i) << std::endl;
+    std::cout << "\t# of " << m_MapFSType2FString[(EFSType)i] << "  :  " << m_FSStatistics.GetSumAll((EFSType)i) << std::endl;
   }
   std::cout << "--------------------------------------- " << std::endl;
 }
@@ -509,7 +517,7 @@ void CMyFs::FSStatistics::AddSum(FsNs::EFSType FSType, int Level, int count)
   }
 }
 
-int CMyFs::FSStatistics::GetCount(FsNs::EFSType FSType, int Level)
+int CMyFs::FSStatistics::GetSum(FsNs::EFSType FSType, int Level)
 {
 
   TMapStatFSLevel2Count& MapStatFSLevel2Count = m_MapStat[(int)FSType];
@@ -517,7 +525,7 @@ int CMyFs::FSStatistics::GetCount(FsNs::EFSType FSType, int Level)
   return foundKey ? MapStatFSLevel2Count[Level] : 0;
 }
 
-int CMyFs::FSStatistics::GetCountAll(FsNs::EFSType FSType)
+int CMyFs::FSStatistics::GetSumAll(FsNs::EFSType FSType)
 {
 
   TMapStatFSLevel2Count& MapStatFSLevel2Count = m_MapStat[(int)FSType];

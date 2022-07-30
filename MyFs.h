@@ -1,13 +1,10 @@
+#ifndef _MYFS_H_
+#define _MYFS_H_
 
 #include <string>
 #include <map>
 #include <vector>
 #include <set>
-
-
-
-#ifndef _MYFS_H_
-#define _MYFS_H_
 
 class CFileSystemDir;
 
@@ -66,6 +63,7 @@ class CMyFs {
 private:
   // Variables
 
+  // Error code dictionary
   std::map< FsNs::EFSReturnCodeId, std::string> m_MapReturnCodeId2Str = {
     {
       {FsNs::EFSReturnCodeId::Ok,                                 "Ok"},
@@ -85,6 +83,7 @@ private:
     }
   };
 
+  // Map from EFSType to string that represent the Fstype
   std::map<FsNs::EFSType, std::string> m_MapFSType2FString =
   {
     {FsNs::EFSType::FILE, "file"},
@@ -99,6 +98,7 @@ private:
   FsNs::EFSReturnCodeId m_FSReturnCodeId = FsNs::EFSReturnCodeId::Ok;
   typedef std::map<int, int> TMapStatFSLevel2Count;
 
+  // FS statistics class (Summarize 
   class FSStatistics
   {
   private:
@@ -108,10 +108,11 @@ private:
     FSStatistics();
     void ClearAll();
     void AddSum(FsNs::EFSType FSType, int Level, int count);
-    int GetCount(FsNs::EFSType FSType, int Level);
-    int GetCountAll(FsNs::EFSType FSType);
+    int GetSum(FsNs::EFSType FSType, int Level);
+    int GetSumAll(FsNs::EFSType FSType);
   };
   FSStatistics m_FSStatistics;
+  bool m_DisplayRc = false; // Display Return code, by default do not display
 
   // Functions
   void SetReturnCodeOk() { m_FSReturnCodeId = FsNs::EFSReturnCodeId::Ok; }
@@ -145,7 +146,6 @@ public:
   ~CMyFs();
   FsNs::EFSReturnCodeId AddDir(std::string DirNameFullPath);
   FsNs::EFSReturnCodeId AddFile(std::string FileNameFullPath);
-  //  bool AddLink(std::string LinkName, std::string LinkFileOrDirNameFullPath);
   FsNs::EFSReturnCodeId AddLink(std::string PathFileOfTheLink, std::string LinkName, std::string LinkedElement);
   FsNs::EFSReturnCodeId DeleteDir(std::string FileNameFullPath);
   FsNs::EFSReturnCodeId DeleteFile(std::string FileNameFullPath);
@@ -154,6 +154,12 @@ public:
   void CollectStatisticsAllFS();
   void DisplaySumOfAllFS();
   FsNs::EFSReturnCodeId GetReturnCode() { return m_FSReturnCodeId; }
+
+  // Statistics of # off Dir/Files/Links
+  int GetSumDirs() { return m_FSStatistics.GetSumAll(FsNs::EFSType::DIR); }
+  int GetSumFiles() { return m_FSStatistics.GetSumAll(FsNs::EFSType::FILE); }
+  int GetSumLinks() { return m_FSStatistics.GetSumAll(FsNs::EFSType::LINK); }
+  void SetDisplayRc(bool DisplayRc) { m_DisplayRc = DisplayRc; }
 
 };
 

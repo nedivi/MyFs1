@@ -35,6 +35,7 @@
     <ClCompile Include="MyFs.cpp" />
     <ClCompile Include="TestMain.cpp" />
     <ClCompile Include="TestMyFsAddElement.cpp" />
+    <ClCompile Include="TestMyFsStress.cpp" />
   </ItemGroup>
   <ItemDefinitionGroup />
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

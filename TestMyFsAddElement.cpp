@@ -28,3 +28,4 @@ TEST(TestMyFs, AddFile)
   EXPECT_EQ(MyFs.AddFile("A/B.dat"), FsNs::EFSReturnCodeId::ErrCannotAddFileAlreadyExist);
   EXPECT_EQ(MyFs.AddFile("A/BCD"), FsNs::EFSReturnCodeId::ErrFileNameIsInvalid);
 }
+

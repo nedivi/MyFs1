@@ -4,6 +4,7 @@
 int main()
 {
   CMyFs MyFs;
+  MyFs.SetDisplayRc(true);
   //  std::string MyDir1("A/B/C");
   MyFs.AddDir("A");
   MyFs.AddDir("A");
