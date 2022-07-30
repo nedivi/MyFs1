@@ -31,12 +31,17 @@ namespace FsNs
   enum class EFSReturnCodeId {
     Ok,
     ErrFileNameIsInvalid,
-    ErrCannotAddFile,
+    ErrCannotAddFileIllegalPath,
+    ErrCannotAddFileAlreadyExist,
+    ErrCannotDeleteFile,
     ErrDirNameIsInvalid,
-    ErrCannotAddDir,
+    ErrCannotAddDirIllegalPath,
+    ErrCannotAddDirAlreadyExist,
+    ErrCannotDeleteDir,
     ErrLinkNameIsInvalid,
-    ErrCannotAddLink,
-    ErrCannotDelete
+    ErrCannotAddLinkIllegalPath,
+    ErrCannotAddLinkAlreadyExist,
+    ErrCannotDeleteLink,
   };
 
 
@@ -61,16 +66,21 @@ class CMyFs {
 private:
   // Variables
 
-  std::map< FsNs::EFSReturnCodeId, std::string> MapReturnCodeId2Str = {
+  std::map< FsNs::EFSReturnCodeId, std::string> m_MapReturnCodeId2Str = {
     {
-      {FsNs::EFSReturnCodeId::Ok,                       "Ok"},
-      {FsNs::EFSReturnCodeId::ErrFileNameIsInvalid,     "File name is invalid"},
-      {FsNs::EFSReturnCodeId::ErrCannotAddFile,         "Cannot add file, illegal path"},
-      {FsNs::EFSReturnCodeId::ErrDirNameIsInvalid,      "Directory name is invalid"},
-      {FsNs::EFSReturnCodeId::ErrCannotAddDir,          "Cannot add directory, illegal path"},
-      {FsNs::EFSReturnCodeId::ErrLinkNameIsInvalid,     "Link name is invalid"},
-      {FsNs::EFSReturnCodeId::ErrCannotAddLink,         "Cannot add link, illegal path"},
-      {FsNs::EFSReturnCodeId::ErrCannotDelete,          "Cannot delete element"},
+      {FsNs::EFSReturnCodeId::Ok,                                 "Ok"},
+      {FsNs::EFSReturnCodeId::ErrFileNameIsInvalid,               "File name is invalid"},
+      {FsNs::EFSReturnCodeId::ErrCannotAddFileIllegalPath,        "Cannot add file, illegal path"},
+      {FsNs::EFSReturnCodeId::ErrCannotAddFileAlreadyExist,       "Cannot add file, it is already exist"},
+      {FsNs::EFSReturnCodeId::ErrDirNameIsInvalid,                "Directory name is invalid"},
+      {FsNs::EFSReturnCodeId::ErrCannotAddDirIllegalPath,         "Cannot add directory, illegal path"},
+      {FsNs::EFSReturnCodeId::ErrCannotAddDirAlreadyExist,        "Cannot add directory, it is already exist path"},
+      {FsNs::EFSReturnCodeId::ErrLinkNameIsInvalid,               "Link name is invalid"},
+      {FsNs::EFSReturnCodeId::ErrCannotAddLinkIllegalPath,        "Cannot add link, illegal path"},
+      {FsNs::EFSReturnCodeId::ErrCannotAddLinkAlreadyExist,       "Cannot add link, it is already exist"},
+      {FsNs::EFSReturnCodeId::ErrCannotDeleteFile,                "Cannot delete file"},
+      {FsNs::EFSReturnCodeId::ErrCannotDeleteDir,                 "Cannot delete directory"},
+      {FsNs::EFSReturnCodeId::ErrCannotDeleteLink,                "Cannot delete link"},
 
     }
   };
@@ -106,7 +116,7 @@ private:
   // Functions
   void SetReturnCodeOk() { m_FSReturnCodeId = FsNs::EFSReturnCodeId::Ok; }
   void SetReturnCode(FsNs::EFSReturnCodeId FSReturnCodeId) { m_FSReturnCodeId = FSReturnCodeId; }
-  void DisplayReturnCode();
+  void DisplayReturnCode(FsNs::EFSReturnCodeId ReturnCodeId);
 
   void SplitFullPathToVector(std::string& FileNameFullPath, std::vector<std::string> &MyVec);
   std::shared_ptr<CFileSystemDir> GetDirInFs(std::vector<std::string>& VecFSNames);
@@ -120,8 +130,8 @@ private:
   bool DeleteFileInFS(std::shared_ptr<CFileSystemDir>& FileSystemDataPtr, std::string& FsToBeDeleted);
   bool DeleteLinkInFS(std::shared_ptr<CFileSystemDir>& FileSystemDataPtr, std::string& FsToBeDeleted);
   bool DeleteElementInFs(std::vector<std::string>& VecFSNames, FsNs::EFSType FSType);
-  bool AddLinkToFs(std::vector<std::string>& VecFSNames, std::string LinkName, std::string LinkedElement);
-  bool AddFileOrDirToFs(std::vector<std::string>& VecFSNames, FsNs::EFSType FSType);
+  FsNs::EFSReturnCodeId AddLinkToFs(std::vector<std::string>& VecFSNames, std::string LinkName, std::string LinkedElement);
+  FsNs::EFSReturnCodeId AddFileOrDirToFs(std::vector<std::string>& VecFSNames, FsNs::EFSType FSType);
   bool ValidFileName(std::string& FileName);
   bool ValidLinkName(std::string& FileName);
   bool ValidDirName(std::string& FileName);
@@ -133,13 +143,13 @@ private:
 public:
   CMyFs();
   ~CMyFs();
-  bool AddDir(std::string DirNameFullPath);
-  bool AddFile(std::string FileNameFullPath);
+  FsNs::EFSReturnCodeId AddDir(std::string DirNameFullPath);
+  FsNs::EFSReturnCodeId AddFile(std::string FileNameFullPath);
   //  bool AddLink(std::string LinkName, std::string LinkFileOrDirNameFullPath);
-  bool AddLink(std::string PathFileOfTheLink, std::string LinkName, std::string LinkedElement);
-  bool DeleteDir(std::string FileNameFullPath);
-  bool DeleteFile(std::string FileNameFullPath);
-  bool DeleteLink(std::string FileNameFullPath);
+  FsNs::EFSReturnCodeId AddLink(std::string PathFileOfTheLink, std::string LinkName, std::string LinkedElement);
+  FsNs::EFSReturnCodeId DeleteDir(std::string FileNameFullPath);
+  FsNs::EFSReturnCodeId DeleteFile(std::string FileNameFullPath);
+  FsNs::EFSReturnCodeId DeleteLink(std::string FileNameFullPath);
   void DisplayAllFS();
   void CollectStatisticsAllFS();
   void DisplaySumOfAllFS();

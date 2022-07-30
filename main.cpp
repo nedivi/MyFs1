@@ -11,6 +11,7 @@ int main()
   MyFs.AddFile("A.dat");
   MyFs.AddLink("", "ZZZ", "A.dat");
   MyFs.AddLink("", "ZZZ", "B.dat");
+  MyFs.AddLink("", "ZZZ.dat", "B.dat");
   MyFs.AddFile("A.");
   MyFs.AddFile("AX_C");
   MyFs.AddFile("Z");

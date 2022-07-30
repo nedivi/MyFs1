@@ -93,14 +93,14 @@ bool CMyFs::ValidFSName(std::vector<std::string>& VecFSNames, EFSType FSType)
 }
 
 
-void CMyFs::DisplayReturnCode()
+void CMyFs::DisplayReturnCode(FsNs::EFSReturnCodeId ReturnCodeId)
 {
   std::string ReturnCodeStr("Return code not found");
-  if (MapReturnCodeId2Str.find(m_FSReturnCodeId) != MapReturnCodeId2Str.end())
+  if (m_MapReturnCodeId2Str.find(ReturnCodeId) != m_MapReturnCodeId2Str.end())
   {
-    ReturnCodeStr = MapReturnCodeId2Str[m_FSReturnCodeId];
+    ReturnCodeStr = m_MapReturnCodeId2Str[ReturnCodeId];
   }
-  std::cout << "Result: " << ReturnCodeStr << std::endl;
+  std::cout << "RC=" << (int)ReturnCodeId << "  - " << ReturnCodeStr << std::endl;
 }
 
 void CMyFs::SplitFullPathToVector(std::string& FileNameFullPath, std::vector<std::string> &VecFSNames)
@@ -143,11 +143,10 @@ std::shared_ptr<CFileSystemDir> CMyFs::GetDirInFs(std::vector<std::string>& VecF
 
 bool CMyFs::SearchInDirs(std::vector<std::string>& VecFSNames, std::string& FsToBeAdded, std::shared_ptr<CFileSystemDir>& FileSystemDataPtr)
 {
-  bool FoundMatchFs = false;
   FsToBeAdded = VecFSNames.back();  // The dir name to be added
   VecFSNames.pop_back();            // Take out the dir name to be added 
   FileSystemDataPtr = GetDirInFs(VecFSNames);
-  return FoundMatchFs;
+  return FileSystemDataPtr != nullptr;
 }
 
 // Display FS In hierarchy mode 
@@ -303,9 +302,9 @@ bool CMyFs::DeleteElementInFs(std::vector<std::string>& VecFSNames, EFSType FSTy
   return ElementDeleted;
 }
 
-bool CMyFs::AddLinkToFs(std::vector<std::string>& VecFSNames, std::string LinkName, std::string LinkedElement)
+EFSReturnCodeId CMyFs::AddLinkToFs(std::vector<std::string>& VecFSNames, std::string LinkName, std::string LinkedElement)
 {
-  bool Ok = false;
+  EFSReturnCodeId ReturnCodeId = EFSReturnCodeId::Ok;
   if (VecFSNames.size() >= 0)
   {
     std::shared_ptr<CFileSystemDir> FileSystemDataPtr = GetDirInFs(VecFSNames);
@@ -316,105 +315,101 @@ bool CMyFs::AddLinkToFs(std::vector<std::string>& VecFSNames, std::string LinkNa
       if (FoundMatchFs == false)
       {
         FileSystemDataPtr->m_MapLinkName[LinkName] = LinkedElement;
-        Ok = true;
+      }
+      else
+      {
+        ReturnCodeId = EFSReturnCodeId::ErrCannotAddLinkAlreadyExist;
       }
     }
+    else
+    {
+      ReturnCodeId = EFSReturnCodeId::ErrCannotAddLinkIllegalPath;
+    }
   }
-  return Ok;
+  return ReturnCodeId;
 }
 
-bool CMyFs::AddFileOrDirToFs(std::vector<std::string>& VecFSNames, EFSType FSType)
+EFSReturnCodeId CMyFs::AddFileOrDirToFs(std::vector<std::string>& VecFSNames, EFSType FSType)
 {
-  bool Ok = false;
+  EFSReturnCodeId ReturnCodeId = EFSReturnCodeId::Ok;
   if (VecFSNames.size() >= 0)
   {
     std::string FsToBeAdded;
     std::shared_ptr<CFileSystemDir> FileSystemDataPtr;
-    bool FoundMatchFs = false;
     SearchInDirs(VecFSNames, FsToBeAdded, FileSystemDataPtr);
     if (FileSystemDataPtr)  // Legal path to add element
     {
       // Now look if there is a file or directory that match this new FS name
-      FoundMatchFs = (FileSystemDataPtr->m_MapDirName.find(FsToBeAdded) != FileSystemDataPtr->m_MapDirName.end());
+      bool FoundMatchFs = (FileSystemDataPtr->m_MapDirName.find(FsToBeAdded) != FileSystemDataPtr->m_MapDirName.end());
       if (FoundMatchFs == false)
       {
         FoundMatchFs = (FileSystemDataPtr->m_SetFileName.find(FsToBeAdded) != FileSystemDataPtr->m_SetFileName.end());
       }
-    }
-    if ((FoundMatchFs == false) && (FileSystemDataPtr))
-    {
-      switch (FSType)
+
+      if (FoundMatchFs == false)
       {
-      case EFSType::DIR:
-        Ok = true;
-        FileSystemDataPtr->m_MapDirName[FsToBeAdded] = std::make_shared<CFileSystemDir>();
-        break;
-      case EFSType::FILE:
-        Ok = true;
-        FileSystemDataPtr->m_SetFileName.insert(FsToBeAdded);
-        break;
+        switch (FSType)
+        {
+        case EFSType::DIR:
+          FileSystemDataPtr->m_MapDirName[FsToBeAdded] = std::make_shared<CFileSystemDir>();
+          break;
+        case EFSType::FILE:
+          FileSystemDataPtr->m_SetFileName.insert(FsToBeAdded);
+          break;
+        }
+      }
+      else
+      {
+        ReturnCodeId = (FSType == EFSType::FILE) ? EFSReturnCodeId::ErrCannotAddFileAlreadyExist : EFSReturnCodeId::ErrCannotAddDirAlreadyExist;
       }
     }
+    else
+    {
+      ReturnCodeId = (FSType == EFSType::FILE) ? EFSReturnCodeId::ErrCannotAddFileIllegalPath : EFSReturnCodeId::ErrCannotAddDirIllegalPath;
+    }
   }
-  return Ok;
+  return ReturnCodeId;
 }
 
 
 
-bool CMyFs::AddDir(std::string DirNameFullPath)
+EFSReturnCodeId CMyFs::AddDir(std::string DirNameFullPath)
 {
-  SetReturnCodeOk();
+  EFSReturnCodeId ReturnCodeId = EFSReturnCodeId::Ok;
   std::vector<std::string> VecFSNames;
   SplitFullPathToVector(DirNameFullPath, VecFSNames);
-  bool Ok = ValidFSName(VecFSNames, EFSType::DIR);
-  if (Ok)
+  if (ValidFSName(VecFSNames, EFSType::DIR))
   {
-    Ok = AddFileOrDirToFs(VecFSNames, EFSType::DIR);
-    if (Ok == false)
-    {
-      SetReturnCode(EFSReturnCodeId::ErrCannotAddDir);
-    }
+    ReturnCodeId = AddFileOrDirToFs(VecFSNames, EFSType::DIR);
   }
   else
   {
-    SetReturnCode(EFSReturnCodeId::ErrDirNameIsInvalid);
+    ReturnCodeId = EFSReturnCodeId::ErrDirNameIsInvalid;
   }
-#ifdef DISPLAY_DEBUG
-  std::cout << "Ok=" << Ok << std::endl;
-#endif
-  DisplayReturnCode();
-  return Ok;
+  DisplayReturnCode(ReturnCodeId);
+  return ReturnCodeId;
 }
 
-bool CMyFs::AddFile(std::string FileNameFullPath)
+EFSReturnCodeId CMyFs::AddFile(std::string FileNameFullPath)
 {
-  SetReturnCodeOk();
+  EFSReturnCodeId ReturnCodeId = EFSReturnCodeId::Ok;
   std::vector<std::string> VecFSNames;
   SplitFullPathToVector(FileNameFullPath, VecFSNames);
-  bool Ok = ValidFSName(VecFSNames, EFSType::FILE);
-  if (Ok)
+  if (ValidFSName(VecFSNames, EFSType::FILE))
   {
-    Ok = AddFileOrDirToFs(VecFSNames, EFSType::FILE);
-    if (Ok == false)
-    {
-      SetReturnCode(EFSReturnCodeId::ErrCannotAddFile);
-    }
+    ReturnCodeId = AddFileOrDirToFs(VecFSNames, EFSType::FILE);
   }
   else
   {
-    SetReturnCode(EFSReturnCodeId::ErrFileNameIsInvalid);
+    ReturnCodeId = EFSReturnCodeId::ErrFileNameIsInvalid;
   }
-#ifdef DISPLAY_DEBUG
-  std::cout << "Ok=" << Ok << std::endl;
-#endif
-  DisplayReturnCode();
-
-  return Ok;
+  DisplayReturnCode(ReturnCodeId);
+  return ReturnCodeId;
 }
 
-bool CMyFs::AddLink(std::string PathFileOfTheLink, std::string LinkName, std::string LinkedElement)
+FsNs::EFSReturnCodeId CMyFs::AddLink(std::string PathFileOfTheLink, std::string LinkName, std::string LinkedElement)
 {
-  SetReturnCodeOk();
+  EFSReturnCodeId ReturnCodeId = EFSReturnCodeId::Ok;
   std::vector<std::string> VecFSNames;
   SplitFullPathToVector(PathFileOfTheLink, VecFSNames);
   bool Ok = true;
@@ -424,37 +419,32 @@ bool CMyFs::AddLink(std::string PathFileOfTheLink, std::string LinkName, std::st
   }
   if (Ok)
   {
-    Ok = AddLinkToFs(VecFSNames, LinkName, LinkedElement);
-    if (Ok == false)
-    {
-      SetReturnCode(EFSReturnCodeId::ErrCannotAddLink);
-    }
+    ReturnCodeId = AddLinkToFs(VecFSNames, LinkName, LinkedElement);
   }
   else
   {
-    SetReturnCode(EFSReturnCodeId::ErrLinkNameIsInvalid);
+    ReturnCodeId = EFSReturnCodeId::ErrLinkNameIsInvalid;
   }
-#ifdef DISPLAY_DEBUG
-  std::cout << "Ok=" << Ok << std::endl;
-#endif
-  DisplayReturnCode();
-
-  return Ok;
+  DisplayReturnCode(ReturnCodeId);
+  return ReturnCodeId;
 }
 
-bool CMyFs::DeleteDir(std::string FileNameFullPath)
+FsNs::EFSReturnCodeId CMyFs::DeleteDir(std::string FileNameFullPath)
 {
-  return DeleteElement(FileNameFullPath, EFSType::DIR);
+  bool ElementDeleted = DeleteElement(FileNameFullPath, EFSType::DIR);
+  return ElementDeleted ? EFSReturnCodeId::Ok : EFSReturnCodeId::ErrCannotDeleteDir;
 }
 
-bool CMyFs::DeleteFile(std::string FileNameFullPath)
+FsNs::EFSReturnCodeId CMyFs::DeleteFile(std::string FileNameFullPath)
 {
-  return DeleteElement(FileNameFullPath, EFSType::FILE);
+  bool ElementDeleted = DeleteElement(FileNameFullPath, EFSType::FILE);
+  return ElementDeleted ? EFSReturnCodeId::Ok : EFSReturnCodeId::ErrCannotDeleteFile;
 }
 
-bool CMyFs::DeleteLink(std::string FileNameFullPath)
+FsNs::EFSReturnCodeId CMyFs::DeleteLink(std::string FileNameFullPath)
 {
-  return DeleteElement(FileNameFullPath, EFSType::LINK);
+  bool ElementDeleted = DeleteElement(FileNameFullPath, EFSType::LINK);
+  return ElementDeleted ? EFSReturnCodeId::Ok : EFSReturnCodeId::ErrCannotDeleteLink;
 }
 
 
@@ -484,16 +474,10 @@ void CMyFs::DisplaySumOfAllFS()
 
 bool CMyFs::DeleteElement(std::string FileNameFullPath, EFSType FSType)
 {
-  SetReturnCodeOk();
   std::vector<std::string> VecFSNames;
   SplitFullPathToVector(FileNameFullPath, VecFSNames);
-
   bool elementDeleted = DeleteElementInFs(VecFSNames, FSType);
-  if (elementDeleted == false)
-  {
-    SetReturnCode(EFSReturnCodeId::ErrCannotDelete);
-  }
-  DisplayReturnCode();
+
   return elementDeleted;
 }
 
