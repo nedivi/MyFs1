@@ -1,0 +1,30 @@
+[==========] Running 11 tests from 1 test case.
+[----------] Global test environment set-up.
+[----------] 11 tests from TestMyFs
+[ RUN      ] TestMyFs.AddDir
+[       OK ] TestMyFs.AddDir (0 ms)
+[ RUN      ] TestMyFs.AddFile
+[       OK ] TestMyFs.AddFile (0 ms)
+[ RUN      ] TestMyFs.AddLink
+[       OK ] TestMyFs.AddLink (0 ms)
+[ RUN      ] TestMyFs.DeleteDir
+[       OK ] TestMyFs.DeleteDir (0 ms)
+[ RUN      ] TestMyFs.DeleteFile
+[       OK ] TestMyFs.DeleteFile (0 ms)
+[ RUN      ] TestMyFs.DeleteLink
+[       OK ] TestMyFs.DeleteLink (0 ms)
+[ RUN      ] TestMyFs.TestMiscAddDeleteDirsFilesLinks
+[       OK ] TestMyFs.TestMiscAddDeleteDirsFilesLinks (76 ms)
+[ RUN      ] TestMyFs.StressMultiSubDirs
+[       OK ] TestMyFs.StressMultiSubDirs (4931 ms)
+[ RUN      ] TestMyFs.StressFlatDirs
+[       OK ] TestMyFs.StressFlatDirs (2063 ms)
+[ RUN      ] TestMyFs.StressFiles
+[       OK ] TestMyFs.StressFiles (2022 ms)
+[ RUN      ] TestMyFs.StressLinks
+[       OK ] TestMyFs.StressLinks (560 ms)
+[----------] 11 tests from TestMyFs (9653 ms total)
+
+[----------] Global test environment tear-down
+[==========] 11 tests from 1 test case ran. (9653 ms total)
+[  PASSED  ] 11 tests.

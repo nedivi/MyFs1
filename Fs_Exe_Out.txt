@@ -1,0 +1,120 @@
+RC=0  - Ok
+RC=7  - Cannot add directory, it is already exist path
+RC=5  - Directory name is invalid
+RC=0  - Ok
+RC=0  - Ok
+RC=11  - Cannot add link, it is already exist
+RC=0  - Ok
+RC=1  - File name is invalid
+RC=1  - File name is invalid
+RC=1  - File name is invalid
+RC=0  - Ok
+RC=0  - Ok
+RC=0  - Ok
+RC=11  - Cannot add link, it is already exist
+RC=0  - Ok
+RC=5  - Directory name is invalid
+RC=0  - Ok
+-------------  Display All FS elements ------------
+A	[dir]
+	B	[dir]
+		C	[dir]
+		D.dat	[file]
+		!@QQQ	[link]
+		@YYY	[link]
+A.dat	[file]
+@ZZZ	[link]
+!@ZZZ.dat	[link]
+---------------------------------------------------
+------------- Sum of all FS ----------- 
+	# of file  :  2
+	# of dir  :  3
+	# of link  :  4
+--------------------------------------- 
+RC=6  - Cannot add directory, illegal path
+RC=6  - Cannot add directory, illegal path
+RC=6  - Cannot add directory, illegal path
+RC=6  - Cannot add directory, illegal path
+-------------  Display All FS elements ------------
+A	[dir]
+	B	[dir]
+		C	[dir]
+		D.dat	[file]
+		!@QQQ	[link]
+		@YYY	[link]
+A.dat	[file]
+@ZZZ	[link]
+!@ZZZ.dat	[link]
+---------------------------------------------------
+------------- Sum of all FS ----------- 
+	# of file  :  2
+	# of dir  :  3
+	# of link  :  4
+--------------------------------------- 
+RC=2  - Cannot add file, illegal path
+RC=2  - Cannot add file, illegal path
+RC=2  - Cannot add file, illegal path
+RC=0  - Ok
+RC=2  - Cannot add file, illegal path
+RC=0  - Ok
+-------------  Display All FS elements ------------
+A	[dir]
+	B	[dir]
+		C	[dir]
+		D.dat	[file]
+		!@QQQ	[link]
+		@YYY	[link]
+	C	[dir]
+		D	[dir]
+A.dat	[file]
+@ZZZ	[link]
+!@ZZZ.dat	[link]
+---------------------------------------------------
+RC=0  - Ok
+RC=0  - Ok
+RC=0  - Ok
+-------------  Display All FS elements ------------
+A	[dir]
+	B	[dir]
+		C	[dir]
+		D.dat	[file]
+		!@QQQ	[link]
+		@YYY	[link]
+	C	[dir]
+		D	[dir]
+			S.dat	[file]
+			Y.dat	[file]
+			Z.dat	[file]
+A.dat	[file]
+@ZZZ	[link]
+!@ZZZ.dat	[link]
+---------------------------------------------------
+RC=0  - Ok
+RC=0  - Ok
+RC=0  - Ok
+RC=0  - Ok
+-------------  Display All FS elements ------------
+A	[dir]
+	B	[dir]
+		C	[dir]
+		D.dat	[file]
+		!@QQQ	[link]
+		@YYY	[link]
+A.dat	[file]
+@ZZZ	[link]
+!@ZZZ.dat	[link]
+---------------------------------------------------
+RC=0  - Ok
+RC=0  - Ok
+RC=12  - Cannot delete link
+RC=4  - Cannot delete file
+RC=4  - Cannot delete file
+RC=0  - Ok
+-------------  Display All FS elements ------------
+A	[dir]
+	B	[dir]
+		C	[dir]
+		D.dat	[file]
+!@ZZZ	[link]
+!@ZZZ.dat	[link]
+---------------------------------------------------
